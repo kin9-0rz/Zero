@@ -1,0 +1,71 @@
+apply plugin: 'com.android.library'
+
+//apply plugin: 'com.jfrog.bintray'
+//apply plugin: 'com.github.dcendents.android-maven'
+
+android {
+    compileSdkVersion 28
+    buildToolsVersion "29.0.0"
+
+
+    defaultConfig {
+        minSdkVersion 19
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    task makeJar(type: Copy) {
+        delete('build/libs/zerolib.jar')
+        from('build/intermediates/packaged-classes/debug/')
+        into('build/libs/')
+        include('classes.jar')
+        rename('classes.jar', 'zerolib.jar')
+    }
+
+    makeJar.dependsOn(build)
+}
+
+group = 'me.mikusjelly.zerolib'
+version = '0.0.1'
+
+//
+//bintray {
+//    user = properties.getProperty("bintray.user")
+//    key = properties.getProperty("bintray.apikey")
+//    pkg {
+//        repo = 'maven'
+//        name = 'zerolib'
+//        userOrg = user
+//        licenses = ['Apache-2.0']
+//        vcsUrl = 'https://github.com/mikusjelly/Zero.git'
+//        version {
+//            name = '0.0.1'
+//            desc = 'zerolib lib'
+//            released  = new Date()
+//            vcsTag = '0.0.1'
+//            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
+//        }
+//    }
+//}
+
+
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}

@@ -16,11 +16,15 @@
 
 package me.mikusjelly.zerolib.rpc;
 
+import android.util.Log;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import me.mikusjelly.zerolib.util.Global;
 
 /**
  * Represents a JSON RPC result.
@@ -73,7 +77,9 @@ public class JsonRpcResult {
     public static String getStackTrace(Throwable throwable) {
         StringWriter stackTraceWriter = new StringWriter();
         stackTraceWriter.write("\n-------------- Java Stacktrace ---------------\n");
-        throwable.printStackTrace(new PrintWriter(stackTraceWriter));
+        if (throwable != null) {
+            throwable.printStackTrace(new PrintWriter(stackTraceWriter));
+        }
         stackTraceWriter.write("----------------------------------------------");
         return stackTraceWriter.toString();
     }

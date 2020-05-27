@@ -17,6 +17,7 @@ package me.mikusjelly.zerolib.rpc;
 
 
 import android.content.Context;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,7 +27,7 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import me.mikusjelly.zerolib.util.Log;
+import me.mikusjelly.zerolib.util.Global;
 
 /**
  * A JSON RPC server that forwards RPC calls to a specified receiver object.
@@ -42,10 +43,9 @@ public class JsonRpcServer extends SimpleServer {
     @Override
     protected void handleRPCConnection(
             Socket sock, Integer UID, BufferedReader reader, PrintWriter writer) throws Exception {
-        Log.d("UID " + UID);
         String data;
         while ((data = reader.readLine()) != null) {
-            Log.v("JsonRpcServer handleRPCConnection, Session " + UID + " Received: " + data);
+            Log.v(Global.TAG, "JsonRpcServer handleRPCConnection, Session " + UID + " Received: " + data);
 
             JSONObject request = new JSONObject(data);
             int id = request.getInt("id");
@@ -54,7 +54,6 @@ public class JsonRpcServer extends SimpleServer {
 
             JSONObject returnValue = processData(id, method, params);
             send(writer, returnValue, UID);
-
         }
     }
 
@@ -69,7 +68,7 @@ public class JsonRpcServer extends SimpleServer {
     @SuppressWarnings("JavaDoc")
     public JSONObject processData(int id, String method, JSONArray params) throws JSONException {
         String result = "Please OVERRIDE the processData method!";
-        Log.w(result);
+        Log.d(Global.TAG,result);
         return JsonRpcResult.result(id, result);
 
     }
@@ -77,7 +76,7 @@ public class JsonRpcServer extends SimpleServer {
     private void send(PrintWriter writer, JSONObject result, int UID) {
         writer.write(result + "\n");
         writer.flush();
-        Log.v("Session " + UID + " Sent: " + result);
+        Log.d(Global.TAG, "Session " + UID + " Sent: " + result);
     }
 
     @Override

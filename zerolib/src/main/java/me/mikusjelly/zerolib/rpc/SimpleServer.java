@@ -16,6 +16,8 @@
 package me.mikusjelly.zerolib.rpc;
 
 
+import android.util.Log;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -36,7 +38,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import me.mikusjelly.zerolib.util.Log;
+import me.mikusjelly.zerolib.util.Global;
 
 /**
  * A simple server.
@@ -52,7 +54,6 @@ public abstract class SimpleServer {
 
     public interface SimpleServerObserver {
         void onConnect();
-
         void onDisconnect();
     }
 
@@ -110,24 +111,24 @@ public abstract class SimpleServer {
 
         @Override
         public void run() {
-            Log.v("Server thread " + getId() + " started.");
+            Log.d(Global.TAG,"Server thread " + getId() + " started.");
             try {
                 if (isRpc) {
-                    Log.d("Handling RPC connection in " + getId());
+                    Log.d(Global.TAG,"Handling RPC connection in " + getId());
                     handleRPCConnection(mmSocket, UID, reader, writer);
                 } else {
-                    Log.d("Handling Non-RPC connection in " + getId());
+                    Log.d(Global.TAG,"Handling Non-RPC connection in " + getId());
                     handleConnection(mmSocket);
                 }
             } catch (Exception e) {
                 if (!mStopServer) {
-                    Log.e("Server error.", e);
+                    Log.e(Global.TAG,"Server error.", e);
                 }
             } finally {
                 close();
                 mConnectionThreads.remove(this.UID);
                 notifyOnDisconnect();
-                Log.v("Server thread " + getId() + " stopped.");
+                Log.d(Global.TAG,"Server thread " + getId() + " stopped.");
             }
         }
 
@@ -136,7 +137,7 @@ public abstract class SimpleServer {
                 try {
                     mmSocket.close();
                 } catch (IOException e) {
-                    Log.e(e.getMessage(), e);
+                    Log.e(Global.TAG,e.getMessage());
                 }
             }
         }
@@ -156,7 +157,7 @@ public abstract class SimpleServer {
             Enumeration<InetAddress> addresses = netint.getInetAddresses();
             for (InetAddress address : Collections.list(addresses)) {
                 if (address instanceof Inet4Address) {
-                    Log.d("local address " + address);
+                    Log.d(Global.TAG,"local address " + address);
                     return address; // Prefer ipv4
                 }
                 candidate = address; // Probably an ipv6
@@ -199,18 +200,18 @@ public abstract class SimpleServer {
                                 }
                             } catch (IOException e) {
                                 if (!mStopServer) {
-                                    Log.e("Failed to accept connection.", e);
+                                    Log.e(Global.TAG,"Failed to accept connection.", e);
                                 }
                             } catch (JSONException e) {
                                 if (!mStopServer) {
-                                    Log.e("Failed to parse request.", e);
+                                    Log.e(Global.TAG,"Failed to parse request.", e);
                                 }
                             }
                         }
                     }
                 };
         mServerThread.start();
-        Log.v("Bound to " + mServer.getInetAddress());
+        Log.d(Global.TAG,"Bound to " + mServer.getInetAddress());
     }
 
     private void startConnectionThread(final Socket sock) throws IOException, JSONException {
@@ -219,14 +220,14 @@ public abstract class SimpleServer {
         PrintWriter writer = new PrintWriter(sock.getOutputStream(), true);
         String data;
         if ((data = reader.readLine()) != null) {
-            Log.v("Received: " + data);
+            Log.d(Global.TAG,"Received: " + data);
             JSONObject request = new JSONObject(data);
             if (request.has("cmd") && request.has("uid")) {
                 String cmd = request.getString("cmd");
                 int uid = request.getInt("uid");
                 JSONObject result = new JSONObject();
                 if (cmd.equals("initiate")) {
-                    Log.d("Initiate a new session");
+                    Log.d(Global.TAG,"Initiate a new session");
                     threadIndex += 1;
                     int mUID = threadIndex;
                     ConnectionThread networkThread =
@@ -238,8 +239,8 @@ public abstract class SimpleServer {
                     result.put("status", true);
                     result.put("error", null);
                 } else if (cmd.equals("continue")) {
-                    Log.d("Continue an existing session");
-                    Log.d("keys: " + mConnectionThreads.keySet().toString());
+                    Log.d(Global.TAG,"Continue an existing session");
+                    Log.d(Global.TAG,"keys: " + mConnectionThreads.keySet().toString());
                     if (!mConnectionThreads.containsKey(uid)) {
                         result.put("uid", uid);
                         result.put("status", false);
@@ -261,7 +262,7 @@ public abstract class SimpleServer {
                 }
                 writer.write(result + "\n");
                 writer.flush();
-                Log.v("Sent: " + result);
+                Log.d(Global.TAG,"Sent: " + result);
             } else {
                 ConnectionThread networkThread =
                         new ConnectionThread(sock, false, 0, reader, writer);
@@ -279,7 +280,7 @@ public abstract class SimpleServer {
         try {
             mServer.close();
         } catch (IOException e) {
-            Log.e("Failed to close server socket.", e);
+            Log.e(Global.TAG,"Failed to close server socket.", e);
         }
         // Since the server is not running, the mNetworkThreads set can only
         // shrink from this point onward. We can just stop all of the running helper

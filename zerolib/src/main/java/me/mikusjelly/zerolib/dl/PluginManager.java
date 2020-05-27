@@ -59,6 +59,9 @@ public class PluginManager {
     public void initPlugins(String pluginPath) {
         File file = new File(pluginPath);
         File[] plugins = file.listFiles();
+        if (plugins == null) {
+            return;
+        }
         for (File plugin : plugins) {
             this.loadApk(plugin.getAbsolutePath());
         }
@@ -122,9 +125,7 @@ public class PluginManager {
         for (DexClassLoader dcl : mDexClassLoaders) {
             try {
                 clz = dcl.loadClass(className);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (VerifyError e) {
+            } catch (ClassNotFoundException | VerifyError e) {
                 e.printStackTrace();
             }
         }

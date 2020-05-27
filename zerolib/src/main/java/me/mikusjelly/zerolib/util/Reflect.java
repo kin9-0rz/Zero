@@ -1,5 +1,8 @@
 package me.mikusjelly.zerolib.util;
 
+import com.orhanobut.logger.AndroidLogAdapter;
+import com.orhanobut.logger.Logger;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -11,8 +14,10 @@ import java.util.ArrayList;
 import dalvik.system.DexClassLoader;
 
 public class Reflect {
-
     private static ArrayList<DexClassLoader> mDexClassLoaders = null;
+
+    public Reflect() {
+    }
 
     public static void setDexClassLoaders(final ArrayList<DexClassLoader> dexClassLoaders) {
         mDexClassLoaders = dexClassLoaders;
@@ -84,47 +89,11 @@ public class Reflect {
         return clazz.getDeclaredField(fieldName);
     }
 
-    /**
-     * 方法的参数
-     */
-    class Parameter {
-        Class<?> parameterType;
-        Object parameter;
-
-        public Parameter(Object data) {
-            parameter = data;
-            if (data == null) {
-                parameterType = null;
-            } else if (data instanceof Integer) {
-                parameterType = Integer.class;
-            } else if (data instanceof Float) {
-                parameterType = Float.class;
-            } else if (data instanceof Double) {
-                parameterType = Double.class;
-            } else if (data instanceof Long) {
-                parameterType = Long.class;
-            } else if (data instanceof String) {
-                parameterType = String.class;
-            } else if (data instanceof Boolean) {
-                parameterType = Boolean.class;
-            } else if (data instanceof byte[]) {
-                parameterType = byte[].class;
-            } else if (data instanceof Object[]) {
-                parameterType = Object[].class;
-            }
-        }
-
-        public Parameter(Class clazz, Object obj) {
-            parameterType = clazz;
-            parameter = obj;
-        }
-    }
-
     public static Object jsonArray2Array(JSONArray jsonArray, String aType) throws JSONException {
         int len = jsonArray.length();
         System.out.println(aType);
         if (aType.equals("byte[]")) {
-            System.out.println("BBBBBB");
+            Logger.d("jsonArray2Array", aType);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
                 bytes[i] = (byte) jsonArray.getInt(i);
@@ -181,10 +150,6 @@ public class Reflect {
     }
 
     /**
-     * 这里调用的方法都是针对基本类型
-     */
-
-    /**
      * 这里遇到一个问题，就是参数不好传
      * private Class<?>[] parameterTypes;
      * private Object[] parameters;
@@ -204,7 +169,12 @@ public class Reflect {
     }
 
     /**
+     * 这里调用的方法都是针对基本类型
+     */
+
+    /**
      * 调用静态方法
+     *
      * @param clazz
      * @param methodName
      * @param args
@@ -218,21 +188,17 @@ public class Reflect {
     public static Object invokeStaticMethod(Class<?> clazz, String methodName, JSONArray args, JSONArray argTypes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         int len = args.length();
         if (len == 0) {
-            // 无参
-            return null;
+            return getMethod(clazz, methodName, null).invoke(clazz, null);
         }
 
         Class<?>[] parameterTypes = new Class[len];
         Object[] parameters = new Object[len];
 
-        try {
-            Object one = args.get(0);
-            System.out.println(one);
-            System.out.println(one.getClass());
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Object one = args.get(0);
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
 
         for (int i = 0; i < args.length(); i++) {
             try {
@@ -290,19 +256,13 @@ public class Reflect {
         return getMethod(instance, methodName, parameterTypes).invoke(instance, parameters);
     }
 
-
     // 静态调用
     private static Method getMethod(Class<?> clz, String methodName, Class<?>[] parameterTypes) throws NoSuchMethodException {
-        if (clz == null) {
-            throw new NoSuchMethodException("Could not find the method");
-        }
         Method mtd = null;
-        try {
-            System.out.println(methodName);
-            mtd = clz.getDeclaredMethod(methodName, parameterTypes);
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        }
+
+        mtd = clz.getDeclaredMethod(methodName, parameterTypes);
+        mtd.setAccessible(true);  // 设置可访问，调用私有方法。
+
         return mtd;
     }
 
@@ -314,6 +274,42 @@ public class Reflect {
         }
         method.setAccessible(true);
         return method;
+    }
+
+    /**
+     * 方法的参数
+     */
+    class Parameter {
+        Class<?> parameterType;
+        Object parameter;
+
+        public Parameter(Object data) {
+            parameter = data;
+            if (data == null) {
+                parameterType = null;
+            } else if (data instanceof Integer) {
+                parameterType = Integer.class;
+            } else if (data instanceof Float) {
+                parameterType = Float.class;
+            } else if (data instanceof Double) {
+                parameterType = Double.class;
+            } else if (data instanceof Long) {
+                parameterType = Long.class;
+            } else if (data instanceof String) {
+                parameterType = String.class;
+            } else if (data instanceof Boolean) {
+                parameterType = Boolean.class;
+            } else if (data instanceof byte[]) {
+                parameterType = byte[].class;
+            } else if (data instanceof Object[]) {
+                parameterType = Object[].class;
+            }
+        }
+
+        public Parameter(Class clazz, Object obj) {
+            parameterType = clazz;
+            parameter = obj;
+        }
     }
 
 }

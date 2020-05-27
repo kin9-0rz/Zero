@@ -1,6 +1,7 @@
 package mikusjelly.zero;
 
 import android.content.Context;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,11 +9,11 @@ import org.json.JSONObject;
 
 import java.lang.reflect.InvocationTargetException;
 
+import me.mikusjelly.zerolib.dl.PluginManager;
 import me.mikusjelly.zerolib.rpc.JsonBuilder;
 import me.mikusjelly.zerolib.rpc.JsonRpcResult;
 import me.mikusjelly.zerolib.rpc.JsonRpcServer;
-import me.mikusjelly.zerolib.util.Log;
-import me.mikusjelly.zerolib.dl.PluginManager;
+import me.mikusjelly.zerolib.util.Global;
 import me.mikusjelly.zerolib.util.Reflect;
 
 public class MyRPC extends JsonRpcServer {
@@ -23,7 +24,6 @@ public class MyRPC extends JsonRpcServer {
         mPluginManager = PluginManager.getInstance(context);
 //      先将dex推送到该目录
         mPluginManager.initPlugins("/data/local/tmp/plugins");
-        Log.e("初始化MyRPC");
         Reflect.setDexClassLoaders(mPluginManager.getClassLoaders());
     }
 
@@ -38,8 +38,7 @@ public class MyRPC extends JsonRpcServer {
         }
 
         if (method.equals("GetFieldValue")) {
-            Log.v("调用静态参数");
-            Log.e(params.toString());
+            Log.d(Global.TAG, "调用静态参数");
             String className = params.getJSONObject(0).getString("className");
             String fieldName = params.getJSONObject(0).getString("fieldName");
 
@@ -53,7 +52,7 @@ public class MyRPC extends JsonRpcServer {
                 System.out.println(JsonBuilder.build(result));
                 System.out.println(Byte[].class);
                 if (result.getClass().equals(byte[].class)) {
-                    System.out.println("类型一样");
+                    Log.d(Global.TAG, "类型一样");
                 }
 
 //                Reflect.invokeMethod("", new Object[]{1, 'a', "String"});
@@ -74,7 +73,7 @@ public class MyRPC extends JsonRpcServer {
         }
 
         if (method.equals("InvokeStaticMethod")) {
-            Log.v("调用静态方法");
+            Log.d(Global.TAG, "调用静态方法" + params);
             String className = params.getJSONObject(0).getString("className");
             String methodName = params.getJSONObject(0).getString("methodName");
             JSONArray arguments = params.getJSONObject(0).getJSONArray("arguments");
@@ -82,7 +81,7 @@ public class MyRPC extends JsonRpcServer {
             try {
                 argumentTypes = params.getJSONObject(0).getJSONArray("argumentTypes");
             } catch (JSONException e) {
-                Log.v("Nothing");
+                e.printStackTrace();
             }
 
             Class<?> aClass1 = null;
@@ -93,22 +92,25 @@ public class MyRPC extends JsonRpcServer {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-            System.out.println(aClass1);
+
             Object result = null;
             try {
                 result = Reflect.invokeStaticMethod(aClass1, methodName, arguments, argumentTypes);
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
+                System.out.println(e.getLocalizedMessage());
+                System.out.println(e.getMessage());
+                return JsonRpcResult.error(id, e.getCause());
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                return JsonRpcResult.error(id, e.getCause());
+            } catch (InvocationTargetException e) {
+                return JsonRpcResult.error(id, e.getCause());
             }
             return JsonRpcResult.result(id, result);
         }
 
         if (method.equals("InvokeMethod")) {
-            Log.e(params.toString());
+            Log.e(Global.TAG, params.toString());
 //            String className = params.getJSONObject(0).getString("className");
 //            String methodName = params.getJSONObject(0).getString("methodName");
 //            JSONArray args = params.getJSONObject(0).getJSONArray("args");
@@ -117,7 +119,7 @@ public class MyRPC extends JsonRpcServer {
 //            }
         }
 
-        Log.e("Not Supported Method!");
+        Log.e(Global.TAG, "Not Supported Method!");
         return JsonRpcResult.result(id, "Not supported method " + method);
 
 

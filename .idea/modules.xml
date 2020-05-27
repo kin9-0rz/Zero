@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Zero.iml" filepath="$PROJECT_DIR$/.idea/modules/Zero.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Zero.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Zero.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/zerolib/Zero.zerolib.iml" filepath="$PROJECT_DIR$/.idea/modules/zerolib/Zero.zerolib.iml" />
+    </modules>
+  </component>
+</project>

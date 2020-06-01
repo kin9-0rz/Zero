@@ -24,7 +24,7 @@ public class MyRPC extends JsonRpcServer {
         mPluginManager = PluginManager.getInstance(context);
 //      先将dex推送到该目录
         mPluginManager.initPlugins("/data/local/tmp/plugins");
-        Reflect.setDexClassLoaders(mPluginManager.getClassLoaders());
+//        Reflect.setDexClassLoaders(mPluginManager.getClassLoaders());
     }
 
     @Override
@@ -44,7 +44,7 @@ public class MyRPC extends JsonRpcServer {
 
             Object result = null;
             try {
-                Class<?> aClass1 = Reflect.loadClass(className);
+                Class<?> aClass1 = mPluginManager.loadClass(className);
                 Object obj = Reflect.newInstance(aClass1);
 
                 result = Reflect.getField(obj, fieldName);
@@ -54,19 +54,7 @@ public class MyRPC extends JsonRpcServer {
                 if (result.getClass().equals(byte[].class)) {
                     Log.d(Global.TAG, "类型一样");
                 }
-
-//                Reflect.invokeMethod("", new Object[]{1, 'a', "String"});
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            } catch (NoSuchFieldException e) {
+            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchFieldException e) {
                 e.printStackTrace();
             }
             return JsonRpcResult.result(id, result);
@@ -77,33 +65,21 @@ public class MyRPC extends JsonRpcServer {
             String className = params.getJSONObject(0).getString("className");
             String methodName = params.getJSONObject(0).getString("methodName");
             JSONArray arguments = params.getJSONObject(0).getJSONArray("arguments");
-            JSONArray argumentTypes = null;
-            try {
-                argumentTypes = params.getJSONObject(0).getJSONArray("argumentTypes");
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            JSONArray  argumentTypes = params.getJSONObject(0).getJSONArray("argumentTypes");
+            String returnType = params.getJSONObject(0).getString("returnType");
 
-            Class<?> aClass1 = null;
+            Class<?> aClass;
 
             try {
-                aClass1 = Reflect.loadClass(className);
-
+                aClass = mPluginManager.loadClass(className);
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                return JsonRpcResult.error(id, e.getCause());
             }
 
             Object result = null;
             try {
-                result = Reflect.invokeStaticMethod(aClass1, methodName, arguments, argumentTypes);
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-                System.out.println(e.getLocalizedMessage());
-                System.out.println(e.getMessage());
-                return JsonRpcResult.error(id, e.getCause());
-            } catch (IllegalAccessException e) {
-                return JsonRpcResult.error(id, e.getCause());
-            } catch (InvocationTargetException e) {
+                result = Reflect.invokeStaticMethod(aClass, methodName, arguments, argumentTypes, returnType);
+            } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 return JsonRpcResult.error(id, e.getCause());
             }
             return JsonRpcResult.result(id, result);

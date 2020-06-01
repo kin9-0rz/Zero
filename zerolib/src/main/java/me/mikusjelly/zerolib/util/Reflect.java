@@ -1,36 +1,36 @@
 package me.mikusjelly.zerolib.util;
 
-import com.orhanobut.logger.AndroidLogAdapter;
+import android.util.Log;
+
 import com.orhanobut.logger.Logger;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-
-import dalvik.system.DexClassLoader;
+import java.util.Arrays;
 
 public class Reflect {
-    private static ArrayList<DexClassLoader> mDexClassLoaders = null;
+//    private static ArrayList<DexClassLoader> mDexClassLoaders = null;
+//
+//    public Reflect() {
+//    }
 
-    public Reflect() {
-    }
-
-    public static void setDexClassLoaders(final ArrayList<DexClassLoader> dexClassLoaders) {
-        mDexClassLoaders = dexClassLoaders;
-    }
-
-    public static Class<?> loadClass(String className) throws ClassNotFoundException {
-        Class<?> clz = null;
-        for (DexClassLoader dcl : mDexClassLoaders) {
-            clz = dcl.loadClass(className);
-        }
-
-        return clz;
-    }
+//    public static void setDexClassLoaders(final ArrayList<DexClassLoader> dexClassLoaders) {
+//        mDexClassLoaders = dexClassLoaders;
+//    }
+//
+//    public static Class<?> loadClass(String className) throws ClassNotFoundException {
+//        Class<?> clz = null;
+//        for (DexClassLoader dcl : mDexClassLoaders) {
+//            clz = dcl.loadClass(className);
+//        }
+//
+//        return clz;
+//    }
 
     /**
      * 无参实例化
@@ -105,7 +105,12 @@ public class Reflect {
         return null;
     }
 
-    public static Class<?> toType(Object data) {
+    /**
+     * 根据数据，判断数据类型
+     * @param data
+     * @return
+     */
+    public static Class<?> getDataType(Object data) {
         if (data instanceof Integer) {
             return int.class;
         }
@@ -149,6 +154,129 @@ public class Reflect {
         return Object.class;
     }
 
+    public static Class<?> str2class(String str) {
+        if (str.equals("short")) {
+            return short.class;
+        }
+        if (str.equals("int")) {
+            return int.class;
+        }
+        if (str.equals("float")) {
+            return float.class;
+        }
+        if (str.equals("double")) {
+            return double.class;
+        }
+        if (str.equals("long")) {
+            return long.class;
+        }
+        if (str.equals("char")) {
+            return char.class;
+        }
+        if (str.equals("String")) {
+            return String.class;
+        }
+        if (str.equals("boolean")) {
+            return Boolean.class;
+        }
+        if (str.equals("byte[]")) {
+            return byte[].class;
+        }
+        if (str.equals("Byte[]")) {
+            return Byte[].class;
+        }
+        if (str.equals("char[]")) {
+            return char[].class;
+        }
+        if (str.equals("String[]")) {
+            return String[].class;
+        }
+        if (str.equals("Object[]")) {
+            return Object[].class;
+        }
+        if (str.equals("JSONArray")) {
+            return JSONArray.class;
+        }
+
+        return Object.class;
+    }
+
+    /**
+     * 调用静态方法
+     *
+     * @param clazz
+     * @param methodName
+     * @param args
+     * @param argTypes
+     * @return
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    @SuppressWarnings("JavadocReference")
+    public static Object invokeStaticMethod(Class<?> clazz, String methodName, JSONArray args, JSONArray argTypes, String returnType) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+        int len = args.length();
+        if (len == 0) {
+            return getStaticMethod(clazz, methodName, null, null).invoke(clazz, null);
+        }
+
+        Class<?>[] parameterTypes = new Class[len];
+        Object[] parameters = new Object[len];
+
+        for (int i = 0; i < args.length(); i++) {
+            try {
+                Object parameter = args.get(i);
+                Class<?> parameterType = str2class((String)argTypes.get(i));
+                if (parameterType == JSONArray.class) {
+                    System.out.println("???????");
+                    System.out.println(parameterType);
+                    System.out.println(argTypes.getString(i).getClass());
+                    Object arrayObj = jsonArray2Array((JSONArray) parameter, argTypes.getString(i));
+                    System.out.println(arrayObj);
+                    parameterTypes[i] = getDataType(arrayObj);
+                    parameters[i] = arrayObj;
+                } else {
+                    parameterTypes[i] = parameterType;
+                    if (parameterType == String.class) {
+                        parameters[i] = StringEscapeUtils.unescapeJava(parameter.toString());
+                        Log.w("TEST", parameters[i].toString());
+                    } else {
+                        parameters[i] = parameter;
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Method mtd = getStaticMethod(clazz, methodName, parameterTypes, str2class(returnType));
+        if (mtd == null) {
+            throw new NoSuchMethodException();
+        }
+
+        return mtd.invoke(clazz, parameters);
+    }
+
+    private static Method getStaticMethod(Class<?> clz, String methodName, Class<?>[] parameterTypes, Class<?> returnType) throws NoSuchMethodException {
+        for (Method m:clz.getDeclaredMethods()) {
+            if (!m.getName().equals(methodName)) {
+                continue;
+            }
+
+            if (!Arrays.equals(m.getParameterTypes(), parameterTypes)) {
+                continue;
+            }
+
+            if (m.getReturnType() == returnType){
+                m.setAccessible(true);
+                return m;
+            }
+        }
+
+        return null;
+    }
+
+
     /**
      * 这里遇到一个问题，就是参数不好传
      * private Class<?>[] parameterTypes;
@@ -172,57 +300,6 @@ public class Reflect {
      * 这里调用的方法都是针对基本类型
      */
 
-    /**
-     * 调用静态方法
-     *
-     * @param clazz
-     * @param methodName
-     * @param args
-     * @param argTypes
-     * @return
-     * @throws NoSuchMethodException
-     * @throws InvocationTargetException
-     * @throws IllegalAccessException
-     */
-    @SuppressWarnings("JavadocReference")
-    public static Object invokeStaticMethod(Class<?> clazz, String methodName, JSONArray args, JSONArray argTypes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        int len = args.length();
-        if (len == 0) {
-            return getMethod(clazz, methodName, null).invoke(clazz, null);
-        }
-
-        Class<?>[] parameterTypes = new Class[len];
-        Object[] parameters = new Object[len];
-
-//        try {
-//            Object one = args.get(0);
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-
-        for (int i = 0; i < args.length(); i++) {
-            try {
-                Object parameter = args.get(i);
-                Class<?> aType = toType(args.get(i));
-                if (aType == JSONArray.class) {
-                    System.out.println("???????");
-                    System.out.println(aType);
-                    System.out.println(argTypes.getString(i).getClass());
-                    Object arrayObj = jsonArray2Array((JSONArray) parameter, argTypes.getString(i));
-                    System.out.println(arrayObj);
-                    parameterTypes[i] = toType(arrayObj);
-                    parameters[i] = arrayObj;
-                } else {
-                    parameterTypes[i] = aType;
-                    parameters[i] = parameter;
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return getMethod(clazz, methodName, parameterTypes).invoke(clazz, parameters);
-    }
 
     /**
      * 调用非静态方法
@@ -232,49 +309,39 @@ public class Reflect {
      * @param jsonArray
      * @return
      */
-    public static Object invokeMethod(Object instance, String methodName, JSONArray jsonArray) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        int len = jsonArray.length();
-        if (len == 0) {
-            // 无参
-            return null;
-        }
-
-        Class<?>[] parameterTypes = new Class[len];
-        Object[] parameters = new Object[len];
-
-        for (int i = 0; i < jsonArray.length(); i++) {
-            try {
-                System.out.println(toType(jsonArray.get(i)));
-                parameters[i] = jsonArray.get(i);
-                parameterTypes[i] = toType(jsonArray.get(i));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-        }
-
-        return getMethod(instance, methodName, parameterTypes).invoke(instance, parameters);
-    }
-
-    // 静态调用
-    private static Method getMethod(Class<?> clz, String methodName, Class<?>[] parameterTypes) throws NoSuchMethodException {
-        Method mtd = null;
-
-        mtd = clz.getDeclaredMethod(methodName, parameterTypes);
-        mtd.setAccessible(true);  // 设置可访问，调用私有方法。
-
-        return mtd;
-    }
+//    public static Object invokeMethod(Object instance, String methodName, JSONArray jsonArray) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+//        int len = jsonArray.length();
+//        if (len == 0) {
+//            // 无参
+//            return null;
+//        }
+//
+//        Class<?>[] parameterTypes = new Class[len];
+//        Object[] parameters = new Object[len];
+//
+//        for (int i = 0; i < jsonArray.length(); i++) {
+//            try {
+//                System.out.println(toType(jsonArray.get(i)));
+//                parameters[i] = jsonArray.get(i);
+//                parameterTypes[i] = toType(jsonArray.get(i));
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//
+//        }
+//
+//        return getMethod(instance, methodName, parameterTypes).invoke(instance, parameters);
+//    }
 
     // 实例化调用
-    public static Method getMethod(Object instance, String methodName, Class<?>[] parameterTypes) throws NoSuchMethodException {
-        Method method = getMethod(instance.getClass(), methodName, parameterTypes);
-        if (method == null) {
-            return null;
-        }
-        method.setAccessible(true);
-        return method;
-    }
+//    public static Method getMethod(Object instance, String methodName, Class<?>[] parameterTypes) throws NoSuchMethodException {
+//        Method method = getMethod(instance.getClass(), methodName, parameterTypes);
+//        if (method == null) {
+//            return null;
+//        }
+//        method.setAccessible(true);
+//        return method;
+//    }
 
     /**
      * 方法的参数

@@ -120,14 +120,10 @@ public class PluginManager {
         return mDexClassLoaders;
     }
 
-    public Class<?> loadClass(String className) {
+    public Class<?> loadClass(String className) throws ClassNotFoundException {
         Class<?> clz = null;
         for (DexClassLoader dcl : mDexClassLoaders) {
-            try {
-                clz = dcl.loadClass(className);
-            } catch (ClassNotFoundException | VerifyError e) {
-                e.printStackTrace();
-            }
+            clz = dcl.loadClass(className);
         }
 
         return clz;
